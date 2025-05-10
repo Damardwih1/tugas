@@ -252,7 +252,7 @@
       return;
     }
     // Redirect to home.html after successful registration
-    window.location.href = "index.html";
+    window.location.href = "index.php";
   });
 
   formLogin.addEventListener('submit', (e) => {
@@ -262,7 +262,7 @@
       return;
     }
     // Redirect to home.html after successful login
-    window.location.href = "index.html";
+    window.location.href = "index.php";
   });
 </script>
 </body>
