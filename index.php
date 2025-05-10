@@ -731,7 +731,7 @@
     // Add this to the script section
   document.getElementById('btn-login-header').addEventListener('click', function() {
     // Redirect to login page or show login modal
-    window.location.href = "login.html"; // Ganti dengan URL halaman login Anda
+    window.location.href = "login.php"; // Ganti dengan URL halaman login Anda
   });
   (() => {
     'use strict';
