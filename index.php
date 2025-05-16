@@ -628,15 +628,6 @@
       overflow-y: auto;
       margin-bottom: 15px;
     }
-    /* Login button circle style */
-    #btn-login-header svg {
-    stroke: #f9fbe7;
-    transition: stroke 0.3s ease;
-    }
-
-    #btn-login-header:hover svg {
-    stroke: #cda974;
-    }
   }
 </style>
 </head>
@@ -645,12 +636,6 @@
   <header>
     <button id="btn-back" aria-label="Kembali ke Pilihan Kategori">&larr;</button>
     Caffè Fiorentino
-    <button id="btn-login-header" aria-label="Login ke akun Anda">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
-    </button>
   </header>
   <main>
     <section id="category-page" aria-label="Pilih kategori menu">
@@ -728,14 +713,10 @@
 </div>
 
 <script>
-    // Add this to the script section
-  document.getElementById('btn-login-header').addEventListener('click', function() {
-    // Redirect to login page or show login modal
-    window.location.href = "login.php"; // Ganti dengan URL halaman login Anda
-  });
   (() => {
     'use strict';
     const menuItems = [
+      // Minuman
       {id:1, category:'minuman', name:'Espresso', desc:'Kopi pekat dengan crema tebal', price:15000, img:'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=400&q=80'},
       {id:2, category:'minuman', name:'Americano', desc:'Espresso pekat, dipadukan air panas, hasilkan rasa kopi yang kuat dan smooth.', price:18000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
       {id:3, category:'minuman', name:'Cappuccino', desc:'Espresso, susu panas, dan busa lembut—perpaduan creamy yang nggak bisa ditolak', price:22000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
@@ -743,4 +724,283 @@
       {id:5, category:'minuman', name:'Flat White', desc:'Espresso dengan susu panas dan sedikit busa, menghasilkan rasa yang kaya dan velvety.', price:23000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
       {id:6, category:'minuman', name:'Mocha', desc:'Perpaduan espresso, susu panas, dan cokelat, memberikan sensasi manis dan kaya.', price:25000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
       {id:7, category:'minuman', name:'Chocolate Frappe', desc:'Es krim cokelat, espresso, dan es, blend jadi minuman manis, dingin, dan segar.', price:28000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-     { id:8, category:'minuman', name:'Vanilla Latte', desc:'Espresso, susu panas, dan sirup vanilla, lembut dengan sentuhan manis.', price:26000, img:'https://images.unsplash.com/photo-1509042239860-f550ce71'}]}) </script>
+      {id:8, category:'minuman', name:'Vanilla Latte', desc:'Espresso, susu panas, dan sirup vanilla, lembut dengan sentuhan manis.', price:26000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
+      
+      // Makanan
+      {id:9, category:'makanan', name:'Croissant', desc:'Croissant renyah dengan mentega premium, bisa dipilih plain atau isi cokelat', price:25000, img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80'},
+      {id:10, category:'makanan', name:'Sandwich', desc:'Roti gandum dengan ayam panggang, sayuran segar, dan saus spesial', price:30000, img:'https://images.unsplash.com/photo-1485451456034-3f9391c6f769?auto=format&fit=crop&w=400&q=80'},
+      {id:11, category:'makanan', name:'Bagel', desc:'Bagel fresh dengan cream cheese dan topping pilihan Anda', price:28000, img:'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=400&q=80'},
+      {id:12, category:'makanan', name:'Salad Buah', desc:'Campuran buah segar dengan yogurt dan granola', price:32000, img:'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80'},
+      
+      // Paket
+      {id:13, category:'paket', name:'Paket Pagi', desc:'1 minuman pilihan + 1 croissant', price:40000, img:'https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&w=400&q=80'},
+      {id:14, category:'paket', name:'Paket Siang', desc:'1 minuman + 1 sandwich/salad', price:45000, img:'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=400&q=80'},
+      {id:15, category:'paket', name:'Paket Keluarga', desc:'3 minuman + 3 makanan (pilihan)', price:120000, img:'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=400&q=80'}
+    ];
+
+    // DOM Elements
+    const categoryPage = document.getElementById('category-page');
+    const contentWrapper = document.getElementById('content-wrapper');
+    const menuPage = document.getElementById('menu-page');
+    const menuContainer = document.getElementById('menu-container');
+    const btnBack = document.getElementById('btn-back');
+    const categoryCards = document.querySelectorAll('.category-card');
+    const btnCart = document.getElementById('btn-cart');
+    const cartBadge = document.getElementById('cart-badge');
+    const sidePanel = document.getElementById('side-panel');
+    const closePanelBtn = document.getElementById('close-panel-btn');
+    const cartList = document.querySelector('.cart-list');
+    const cartTotal = document.getElementById('cart-total');
+    const btnCheckout = document.getElementById('btn-checkout');
+    const receiptModal = document.getElementById('receipt-modal');
+    const btnCloseReceipt = document.getElementById('btn-close-receipt');
+    const paymentMethods = document.querySelectorAll('input[name="payment-method"]');
+    const ewalletOptions = document.getElementById('ewallet-options');
+    const historyList = document.getElementById('history-list');
+    const btnClearHistory = document.getElementById('btn-clear-history');
+
+    // State
+    let cart = [];
+    let orderHistory = JSON.parse(localStorage.getItem('orderHistory')) || [];
+
+    // Initialize
+    renderOrderHistory();
+
+    // Event Listeners
+    categoryCards.forEach(card => {
+      card.addEventListener('click', () => loadMenu(card.dataset.category));
+      card.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') loadMenu(card.dataset.category);
+      });
+    });
+
+    btnBack.addEventListener('click', () => {
+      contentWrapper.style.display = 'none';
+      categoryPage.style.display = 'flex';
+      btnBack.style.display = 'none';
+    });
+
+    btnCart.addEventListener('click', () => {
+      sidePanel.classList.add('open');
+      sidePanel.setAttribute('aria-hidden', 'false');
+    });
+
+    closePanelBtn.addEventListener('click', () => {
+      sidePanel.classList.remove('open');
+      sidePanel.setAttribute('aria-hidden', 'true');
+    });
+
+    btnCheckout.addEventListener('click', checkout);
+    btnCloseReceipt.addEventListener('click', () => {
+      receiptModal.classList.remove('open');
+    });
+
+    paymentMethods.forEach(method => {
+      method.addEventListener('change', (e) => {
+        if (e.target.value === 'EWallet') {
+          ewalletOptions.style.display = 'block';
+        } else {
+          ewalletOptions.style.display = 'none';
+        }
+      });
+    });
+
+    btnClearHistory.addEventListener('click', () => {
+      orderHistory = [];
+      localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
+      renderOrderHistory();
+    });
+
+    // Functions
+    function loadMenu(category) {
+      const filteredItems = menuItems.filter(item => item.category === category);
+      
+      menuContainer.innerHTML = '';
+      filteredItems.forEach(item => {
+        const menuItem = document.createElement('div');
+        menuItem.className = 'menu-item';
+        menuItem.innerHTML = `
+          <img class="menu-image" src="${item.img}" alt="${item.name}" />
+          <div class="menu-content">
+            <h3 class="menu-title">${item.name}</h3>
+            <p class="menu-desc">${item.desc}</p>
+            <div class="menu-price">Rp ${item.price.toLocaleString('id-ID')}</div>
+            <button class="btn-add-cart" data-id="${item.id}" aria-label="Tambahkan ${item.name} ke keranjang">
+              <span class="icon"></span>
+            </button>
+          </div>
+        `;
+        menuContainer.appendChild(menuItem);
+      });
+
+      // Add event listeners to add-to-cart buttons
+      document.querySelectorAll('.btn-add-cart').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const itemId = parseInt(btn.dataset.id);
+          addToCart(itemId);
+        });
+      });
+
+      categoryPage.style.display = 'none';
+      contentWrapper.style.display = 'flex';
+      menuPage.style.display = 'flex';
+      btnBack.style.display = 'block';
+    }
+
+    function addToCart(itemId) {
+      const item = menuItems.find(i => i.id === itemId);
+      const existingItem = cart.find(i => i.id === itemId);
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({...item, quantity: 1});
+      }
+
+      updateCart();
+    }
+
+    function updateCart() {
+      cartList.innerHTML = '';
+      let total = 0;
+
+      cart.forEach(item => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="item-info">
+            <span class="item-name">${item.name}</span>
+            <span class="item-qty">x${item.quantity}</span>
+            <span class="item-price">Rp ${(item.price * item.quantity).toLocaleString('id-ID')}</span>
+          </div>
+          <button class="btn-remove" data-id="${item.id}" aria-label="Hapus ${item.name} dari keranjang">×</button>
+        `;
+        cartList.appendChild(li);
+        total += item.price * item.quantity;
+      });
+
+      // Add event listeners to remove buttons
+      document.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const itemId = parseInt(btn.dataset.id);
+          removeFromCart(itemId);
+        });
+      });
+
+      cartTotal.textContent = `Total: Rp ${total.toLocaleString('id-ID')}`;
+      
+      // Update cart badge
+      const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      if (itemCount > 0) {
+        cartBadge.textContent = itemCount;
+        cartBadge.style.display = 'flex';
+      } else {
+        cartBadge.style.display = 'none';
+      }
+
+      // Enable/disable checkout button
+      btnCheckout.disabled = itemCount === 0;
+    }
+
+    function removeFromCart(itemId) {
+      cart = cart.filter(item => item.id !== itemId);
+      updateCart();
+    }
+
+    function checkout() {
+      if (cart.length === 0) return;
+
+      // Get payment method
+      const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+      let paymentDetail = paymentMethod;
+      
+      if (paymentMethod === 'EWallet') {
+        const ewallet = document.querySelector('input[name="ewallet"]:checked').value;
+        paymentDetail = `${paymentMethod} (${ewallet})`;
+      }
+
+      // Create order
+      const orderNumber = 'ORD-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+      const orderDate = new Date().toLocaleString('id-ID');
+      const orderTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      const order = {
+        number: orderNumber,
+        date: orderDate,
+        items: [...cart],
+        total: orderTotal,
+        payment: paymentDetail
+      };
+
+      // Add to history
+      orderHistory.unshift(order);
+      localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
+      renderOrderHistory();
+
+      // Show receipt
+      showReceipt(order);
+
+      // Clear cart
+      cart = [];
+      updateCart();
+    }
+
+    function showReceipt(order) {
+      document.getElementById('order-number').textContent = order.number;
+      document.getElementById('order-date').textContent = order.date;
+      
+      const receiptItems = document.getElementById('receipt-items');
+      receiptItems.innerHTML = '';
+      
+      order.items.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.name} x${item.quantity} - Rp ${(item.price * item.quantity).toLocaleString('id-ID')}`;
+        receiptItems.appendChild(li);
+      });
+      
+      const totalLi = document.createElement('li');
+      totalLi.innerHTML = `<strong>Total: Rp ${order.total.toLocaleString('id-ID')}</strong>`;
+      totalLi.style.borderTop = '1px solid #bf360c';
+      totalLi.style.paddingTop = '0.5rem';
+      totalLi.style.marginTop = '0.5rem';
+      receiptItems.appendChild(totalLi);
+      
+      // Generate simple barcode
+      const canvas = document.getElementById('barcode');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 200;
+      canvas.height = 50;
+      ctx.fillStyle = '#3e2723';
+      
+      // Simple barcode pattern based on order number
+      for (let i = 0; i < 20; i++) {
+        const height = 10 + Math.random() * 30;
+        ctx.fillRect(i * 10, 50 - height, 5, height);
+      }
+      
+      receiptModal.classList.add('open');
+    }
+
+    function renderOrderHistory() {
+      historyList.innerHTML = '';
+      
+      if (orderHistory.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'Belum ada riwayat pesanan';
+        historyList.appendChild(li);
+        return;
+      }
+      
+      orderHistory.slice(0, 5).forEach(order => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <strong>${order.number}</strong><br>
+          ${order.items.length} item • Rp ${order.total.toLocaleString('id-ID')}<br>
+          <small>${order.date}</small>
+        `;
+        historyList.appendChild(li);
+      });
+    }
+  })();
+</script>
+</body>
+</html>
