@@ -1,1006 +1,187 @@
+<?php
+session_start();
+
+// Redirect jika sudah login
+if (isset($_SESSION['user'])) {
+    header("Location: app.php");
+    exit();
+}
+
+// Load user data
+$users = [];
+if (file_exists('users.json')) {
+    $users = json_decode(file_get_contents('users.json'), true);
+}
+
+// Handle login
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
+    $username = trim($_POST['username']);
+    $password = $_POST['password'];
+
+    if (empty($username) || empty($password)) {
+        $error = "Username dan password harus diisi!";
+    } elseif (!isset($users[$username]) || !password_verify($password, $users[$username]['password'])) {
+        $error = "Username atau password salah!";
+    } else {
+        $_SESSION['user'] = $username;
+        header("Location: app.php");
+        exit();
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Caffè Fiorentino</title>
-<style>
-  * {
-    box-sizing: border-box;
-  }
-  body, html {
-    margin: 0; padding: 0; height: 100vh; width: 100vw;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f7f1e1;
-    color: #3e2723;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow: hidden;
-  }
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100vw;
-    position: relative;
-    background: linear-gradient(135deg, #d7ccc8 0%, #8d6e63 100%);
-    background-image:
-      url('https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80');
-    background-size: cover;
-    background-position: center;
-  }
-  header {
-    background: rgba(62, 39, 35, 0.85);
-    text-align: center;
-    padding: 1rem 0;
-    font-size: 1.7rem;
-    color: #f9fbe7;
-    font-weight: 700;
-    letter-spacing: 2px;
-    user-select: none;
-    -webkit-user-select: none;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.5);
-    position: relative;
-  }
-  /* Back button for menu page */
-  #btn-back {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    font-size: 1.7rem;
-    color: #f9fbe7;
-    cursor: pointer;
-    user-select: none;
-    display: none;
-  }
-  #btn-back:focus {
-    outline: 2px solid #bf360c;
-  }
-
-  main {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 1rem 1rem 1rem 1rem;
-    background: rgba(247, 243, 242, 0.87);
-    backdrop-filter: saturate(180%) blur(6px);
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Category selection page */
-  #category-page {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 2.5rem;
-    height: auto;
-  }
-  .category-card {
-    background: rgba(255, 248, 236, 0.95);
-    border-radius: 18px;
-    box-shadow: 0 4px 20px rgba(62,39,35,0.4);
-    width: 180px;
-    height: 180px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-  }
-  .category-card:hover, .category-card:focus {
-    transform: translateY(-8px);
-    box-shadow: 0 8px 30px rgba(62,39,35,0.6);
-    outline: none;
-  }
-  .category-card img {
-    width: 100px;
-    height: 100px;
-    margin-bottom: 1rem;
-    object-fit: contain;
-  }
-  .category-card span {
-    font-weight: 700;
-    font-size: 1.45rem;
-    color: #4e342e;
-    user-select: none;
-  }
-
-  /* Container wrapping menu + history */
-  #content-wrapper {
-    flex-grow: 1;
-    display: flex;
-    gap: 20px;
-    height: 100%;
-  }
-
-  /* Menu + history layout adjustments for desktop */
-  #menu-page {
-    display: none;
-    flex-direction: column;
-    flex: 4;
-  }
-  .menu-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
-    gap: 20px 18px;
-  }
-  /* History vertical panel */
-  #history-panel {
-    flex: 1;
-    background: rgba(255,248,236,0.9);
-    border-radius: 14px;
-    padding: 1rem 1rem 0.5rem 1rem;
-    color: #4e342e;
-    font-weight: 600;
-    font-size: 1.1rem;
-    box-shadow: 0 3px 12px rgba(62,39,35,0.3);
-    overflow-y: auto;
-    max-height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  #history-panel h3 {
-    margin-top: 0;
-    margin-bottom: 0.7rem;
-    font-weight: 800;
-    text-align: center;
-    border-bottom: 1px solid #bf360c;
-    padding-bottom: 6px;
-    user-select: none;
-  }
-  #history-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    flex-grow: 1;
-    overflow-y: auto;
-  }
-  #history-list li {
-    padding: 6px 4px;
-    border-bottom: 1px solid #ccc1b0;
-    font-size: 0.95rem;
-    line-height: 1.3;
-  }
-  #history-list li:last-child {
-    border-bottom: none;
-  }
-  #btn-clear-history {
-    background: #bf360c;
-    color: #f9fbe7;
-    border: none;
-    border-radius: 8px;
-    padding: 0.45rem 0.8rem;
-    font-weight: 700;
-    font-size: 0.95rem;
-    margin-top: 8px;
-    cursor: pointer;
-    transition: background-color 0.25s ease;
-    user-select: none;
-  }
-  #btn-clear-history:hover, #btn-clear-history:focus {
-    background-color: #6d4c41;
-    outline: none;
-  }
-
-  .menu-item {
-    background: #fff8f1;
-    border-radius: 14px;
-    box-shadow: 0 4px 18px rgba(62,39,35,0.32);
-    overflow: hidden;
-    cursor: default;
-    display: flex;
-    flex-direction: row;
-    padding: 10px;
-  }
-  .menu-item:hover {
-    box-shadow: 0 9px 28px rgba(62,39,35,0.5);
-  }
-  .menu-image {
-    width: 140px;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 14px;
-    flex-shrink: 0;
-  }
-  .menu-content {
-    padding-left: 16px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    flex-grow: 1;
-  }
-  .menu-title {
-    font-weight: 700;
-    font-size: 1.3rem;
-    margin: 0 0 6px 0;
-    color: #4e342e;
-    line-height: 1.2;
-  }
-  .menu-desc {
-    font-size: 0.85rem;
-    color: #6d4c41;
-    margin-top: 0;
-    margin-bottom: 12px;
-    line-height: 1.4;
-    overflow: hidden;
-  }
-  .menu-price {
-    font-weight: 700;
-    font-size: 1.2rem;
-    color: #bf360c;
-    margin-bottom: 12px;
-  }
-  .btn-add-cart {
-    background-color: #6d4c41;
-    color: #f9fbe7;
-    border: none;
-    border-radius: 10px;
-    padding: 0.45rem 0;
-    font-weight: 700;
-    font-size: 0; /* hide text */
-    cursor: pointer;
-    transition: background-color 0.25s ease;
-    width: 38px;
-    height: 38px;
-    align-self: flex-start;
-    position: relative;
-  }
-  .btn-add-cart:hover, .btn-add-cart:focus {
-    background-color: #bf360c;
-    outline: none;
-  }
-  .btn-add-cart span.icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 22px;
-    height: 18px;
-    background-image: url('https://cdn-icons-png.flaticon.com/512/263/263142.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    transform: translate(-50%, -50%);
-    display: block;
-  }
-
-  /* Keranjang button fixed bottom right */
-  #btn-cart {
-    position: fixed;
-    bottom: 70px;
-    right: 20px;
-    background: #bf360c;
-    border-radius: 50%;
-    width: 54px;
-    height: 54px;
-    color: #f9fbe7;
-    font-size: 2rem;
-    cursor: pointer;
-    box-shadow: 0 5px 10px rgba(0,0,0,0.35);
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    z-index: 110;
-  }
-  #btn-cart:hover {
-    background: #6d4c41;
-  }
-  #cart-badge {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    background: #f9a825;
-    color: #3e2723;
-    font-weight: 700;
-    font-size: 0.78rem;
-    width: 19px;
-    height: 19px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-  }
-
-  /* Side panel for cart and payment */
-  #side-panel {
-    position: fixed;
-    top: 0;
-    right: -100vw;
-    width: 340px;
-    max-width: 85vw;
-    height: 100vh;
-    background: #f8f4f1;
-    box-shadow: -4px 0 18px rgba(0,0,0,0.45);
-    transition: right 0.35s ease;
-    z-index: 120;
-    display: flex;
-    flex-direction: column;
-  }
-  #side-panel.open {
-    right: 0;
-  }
-  #side-panel header {
-    padding: 1rem;
-    font-weight: 700;
-    font-size: 1.37rem;
-    color: #4e342e;
-    border-bottom: 1px solid #d7ccc8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  #side-panel .close-panel {
-    background: transparent;
-    border: none;
-    color: #4e342e;
-    font-size: 1.8rem;
-    cursor: pointer;
-    padding: 0 8px;
-    line-height: 1;
-  }
-  #side-panel .content {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 0.8rem 1.2rem;
-  }
-  #side-panel .content::-webkit-scrollbar {
-    width: 6px;
-  }
-  #side-panel .content::-webkit-scrollbar-thumb {
-    background-color: #bf360c;
-    border-radius: 3px;
-  }
-  #side-panel ul.cart-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  #side-panel ul.cart-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #d7ccc8;
-    padding-bottom: 0.4rem;
-  }
-  #side-panel ul.cart-list li .item-info {
-    flex-grow: 1;
-  }
-  #side-panel ul.cart-list li .item-name {
-    font-weight: 700;
-    color: #4e342e;
-  }
-  #side-panel ul.cart-list li .item-qty {
-    margin-left: 5px;
-    font-size: 0.85rem;
-    color: #6d4c41;
-  }
-  #side-panel ul.cart-list li .item-price {
-    margin-left: 8px;
-    font-weight: 700;
-    color: #bf360c;
-  }
-  #side-panel ul.cart-list li button.btn-remove {
-    background: transparent;
-    border: none;
-    font-size: 1.15rem;
-    color: #bf360c;
-    cursor: pointer;
-    align-self: flex-start;
-    padding: 0 7px;
-    transition: color 0.25s ease;
-  }
-  #side-panel ul.cart-list li button.btn-remove:hover {
-    color: #6d4c41;
-  }
-  #side-panel .total {
-    font-weight: 700;
-    font-size: 1.3rem;
-    color: #bf360c;
-    margin-top: 1rem;
-    text-align: right;
-  }
-  #side-panel button.btn-checkout {
-    width: 100%;
-    background: #6d4c41;
-    color: #f9fbe7;
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem 0;
-    font-weight: 700;
-    font-size: 1.15rem;
-    cursor: pointer;
-    transition: background-color 0.25s ease;
-  }
-  #side-panel button.btn-checkout:disabled {
-    background: #d7ccc8;
-    cursor: not-allowed;
-    color: #8d6e63;
-  }
-  #side-panel button.btn-checkout:hover:not(:disabled) {
-    background: #bf360c;
-  }
-
-  /* Payment options */
-  #payment-options {
-    margin-top: 0.7rem;
-  }
-  #payment-options label {
-    display: block;
-    margin-bottom: 0.57rem;
-    cursor: pointer;
-    font-weight: 600;
-    color: #4e342e;
-  }
-  #payment-options input[type="radio"] {
-    margin-right: 9px;
-    accent-color: #bf360c;
-  }
-
-  #ewallet-options {
-    margin-left: 1.1rem;
-    margin-top: 0.45rem;
-    margin-bottom: 0.7rem;
-    display: none;
-  }
-  #ewallet-options label {
-    font-weight: normal;
-    color: #6d4c41;
-  }
-
-  /* Modal for receipt */
-  #receipt-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(62,39,35,0.85);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 150;
-    padding: 1.4rem;
-  }
-  #receipt-modal.open {
-    display: flex;
-  }
-  #receipt-content {
-    background: #f9fbe7;
-    max-width: 380px;
-    width: 100%;
-    border-radius: 14px;
-    padding: 2.2rem 2.4rem;
-    color: #3e2723;
-    box-shadow: 0 5px 14px rgba(0,0,0,0.35);
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-  #receipt-content h2 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-weight: 900;
-    color: #bf360c;
-    font-size: 1.9rem;
-  }
-  #receipt-content .order-number {
-    font-size: 2rem;
-    margin: 1rem 0 0.8rem 0;
-    font-weight: 900;
-    letter-spacing: 5px;
-    font-family: monospace, monospace;
-    user-select: all;
-  }
-  #receipt-content .order-date {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #4e342e;
-    margin-bottom: 1.5rem;
-  }
-  #receipt-content .barcode {
-    margin-bottom: 1.6rem;
-  }
-  #receipt-content ul {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.6rem 0;
-    text-align: left;
-    max-height: 180px;
-    overflow-y: auto;
-  }
-  #receipt-content ul li {
-    font-size: 1.05rem;
-    margin-bottom: 0.36rem;
-    border-bottom: 1px solid #d7ccc8;
-    padding-bottom: 0.4rem;
-  }
-  #receipt-content button {
-    background: #6d4c41;
-    color: #f9fbe7;
-    border: none;
-    border-radius: 8px;
-    padding: 0.55rem 1.2rem;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 1.05rem;
-    transition: background-color 0.28s ease;
-  }
-  #receipt-content button:hover {
-    background: #bf360c;
-  }
-
-  /* Unique flickering candle flame effect bottom-left as surprise feature */
-  #flame-container {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    pointer-events: none;
-    width: 40px;
-    height: 60px;
-    user-select: none;
-  }
-  #flame {
-    width: 40px;
-    height: 60px;
-    background: radial-gradient(circle at 50% 70%, #fce88d 40%, #f9d71c 70%, transparent 80%);
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    filter: drop-shadow(0 0 4px #f9d71c);
-    animation: flicker 1.5s infinite alternate;
-  }
-  @keyframes flicker {
-    0% {
-      transform: translateY(0) scale(1);
-      filter: drop-shadow(0 0 6px #f9d71c);
-    }
-    50% {
-      transform: translateY(-3px) scale(1.05);
-      filter: drop-shadow(0 0 9px #fac90f);
-    }
-    100% {
-      transform: translateY(0) scale(1);
-      filter: drop-shadow(0 0 6px #f9d71c);
-    }
-  }
-
-  /* Responsive adjustments */
-  @media (max-width: 960px) {
-    #content-wrapper {
-      flex-direction: column;
-      gap: 20px;
-    }
-    #history-panel {
-      max-height: 120px;
-      overflow-y: auto;
-      margin-bottom: 12px;
-      border-radius: 14px;
-      box-shadow: 0 3px 12px rgba(62,39,35,0.3);
-    }
-  }
-  @media (max-width: 600px) and (max-height: 600px) {
-    #side-panel {
-      width: 100vw;
-    }
-    #btn-back {
-      font-size: 1.6rem;
-      left: 12px;
-    }
-    .category-card {
-      width: 150px;
-      height: 150px;
-    }
-    .menu-grid {
-      grid-template-columns: repeat(auto-fit, minmax(100%,1fr));
-      gap: 14px 12px;
-    }
-    .menu-item {
-      flex-direction: column;
-      padding: 10px;
-    }
-    .menu-image {
-      width: 100%;
-      height: 220px;
-      border-radius: 14px;
-      margin-bottom: 10px;
-    }
-    .menu-content {
-      padding-left: 0;
-      height: auto;
-    }
-    .btn-add-cart {
-      width: 100%;
-      font-size: 1rem;
-      padding: 0.5rem 0;
-    }
-    #btn-cart {
-      bottom: 90px;
-      right: 15px;
-    }
-    #history-panel {
-      max-height: 120px;
-      overflow-y: auto;
-      margin-bottom: 15px;
-    }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caffè Fiorentino - Login</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #d7ccc8 0%, #8d6e63 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo h1 {
+            color: #3e2723;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+        }
+        
+        .login-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .login-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #4e342e;
+            font-weight: 600;
+        }
+        
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d7ccc8;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .login-form input:focus {
+            outline: none;
+            border-color: #6d4c41;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #6d4c41;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .login-btn:hover {
+            background: #8d6e63;
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #4e342e;
+        }
+        
+        .register-link a {
+            color: #bf360c;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            color: #c62828;
+            background: #ffebee;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border: 1px solid #ef9a9a;
+        }
+    </style>
 </head>
 <body>
-<div id="app" role="main" aria-label="Caffè Fiorentino Application">
-  <header>
-    <button id="btn-back" aria-label="Kembali ke Pilihan Kategori">&larr;</button>
-    Caffè Fiorentino
-  </header>
-  <main>
-    <section id="category-page" aria-label="Pilih kategori menu">
-      <div tabindex="0" role="button" class="category-card" data-category="minuman" aria-pressed="false" aria-label="Pilih kategori Minuman">
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Ilustrasi cangkir kopi" />
-        <span>Minuman</span>
-      </div>
-      <div tabindex="0" role="button" class="category-card" data-category="makanan" aria-pressed="false" aria-label="Pilih kategori Makanan">
-        <img src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png" alt="Ikon makanan" />
-        <span>Makanan</span>
-      </div>
-      <div tabindex="0" role="button" class="category-card" data-category="paket" aria-pressed="false" aria-label="Pilih kategori Paket">
-        <img src="https://cdn-icons-png.flaticon.com/512/3143/3143460.png" alt="Ilustrasi paket makanan dan minuman" />
-        <span>Paket</span>
-      </div>
-    </section>
-
-    <div id="content-wrapper" style="display:none;">
-      <section id="menu-page" aria-label="Daftar menu">
-        <div class="menu-grid" id="menu-container" tabindex="0" aria-live="polite" aria-atomic="true" aria-relevant="additions removals">
-          <!-- Menu akan dimuat di sini -->
+    <div class="login-container">
+        <div class="logo">
+            <h1>Caffè Fiorentino</h1>
         </div>
-      </section>
 
-      <section id="history-panel" aria-label="Riwayat Pesanan Anda">
-        <h3>Riwayat Pesanan</h3>
-        <ul id="history-list" aria-live="polite" aria-relevant="additions"></ul>
-        <button id="btn-clear-history" aria-label="Hapus semua riwayat pesanan">Hapus Riwayat</button>
-      </section>
+        <?php if ($error): ?>
+            <div class="error-message"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
+
+        <form class="login-form" method="POST">
+            <input type="hidden" name="action" value="login">
+            
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    required
+                    placeholder="Masukkan username"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required
+                    placeholder="Masukkan password"
+                >
+            </div>
+            
+            <button type="submit" class="login-btn">Masuk</button>
+            
+            <div class="register-link">
+                Belum punya akun? <a href="register.php">Daftar disini</a>
+            </div>
+        </form>
     </div>
-  </main>
-
-  <button id="btn-cart" aria-label="Buka Keranjang Belanja">
-    🛒
-    <div id="cart-badge" aria-live="polite" aria-atomic="true" style="display:none;">0</div>
-  </button>
-
-  <div id="side-panel" aria-modal="true" role="dialog" aria-labelledby="side-panel-title" aria-hidden="true">
-    <header id="side-panel-title">Keranjang Belanja
-      <button class="close-panel" id="close-panel-btn" aria-label="Tutup Panel Keranjang & Pembayaran">&times;</button>
-    </header>
-    <div class="content" id="cart-content">
-      <ul class="cart-list" aria-live="polite" aria-relevant="additions removals"></ul>
-      <div class="total" id="cart-total">Total: Rp 0</div>
-
-      <div id="payment-options" role="radiogroup" aria-labelledby="payment-label">
-        <span id="payment-label" style="font-weight:700; margin-bottom: 0.3rem; display: inline-block;">Pilih Metode Pembayaran:</span>
-        <label><input type="radio" name="payment-method" value="Cashier" checked> Bayar di Kasir</label>
-        <label><input type="radio" name="payment-method" value="EWallet"> E-Wallet</label>
-        <div id="ewallet-options" aria-label="Opsi E-Wallet">
-          <label><input type="radio" name="ewallet" value="Dana" checked> Dana</label>
-          <label><input type="radio" name="ewallet" value="Gopay"> Gopay</label>
-          <label><input type="radio" name="ewallet" value="ShopeePay"> Shopee Pay</label>
-          <label><input type="radio" name="ewallet" value="PayPal"> PayPal</label>
-        </div>
-      </div>
-
-      <button id="btn-checkout" class="btn-checkout" disabled>Checkout</button>
-    </div>
-  </div>
-
-  <div id="receipt-modal" role="alertdialog" aria-modal="true" aria-labelledby="receipt-title" aria-describedby="receipt-desc">
-    <div id="receipt-content">
-      <h2 id="receipt-title">Bukti Pembelian</h2>
-      <div class="order-number" id="order-number"></div>
-      <div class="order-date" id="order-date"></div>
-      <canvas id="barcode" class="barcode"></canvas>
-      <ul id="receipt-items"></ul>
-      <button id="btn-close-receipt" aria-label="Tutup bukti pembelian">Tutup</button>
-      <div id="flame-container">
-        <div id="flame"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  (() => {
-    'use strict';
-    const menuItems = [
-      // Minuman
-      {id:1, category:'minuman', name:'Espresso', desc:'Kopi pekat dengan crema tebal', price:15000, img:'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=400&q=80'},
-      {id:2, category:'minuman', name:'Americano', desc:'Espresso pekat, dipadukan air panas, hasilkan rasa kopi yang kuat dan smooth.', price:18000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-      {id:3, category:'minuman', name:'Cappuccino', desc:'Espresso, susu panas, dan busa lembut—perpaduan creamy yang nggak bisa ditolak', price:22000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-      {id:4, category:'minuman', name:'Cafe Latte', desc:'Espresso yang halus, dipadu susu panas, menciptakan rasa lembut dan creamy.', price:22000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-      {id:5, category:'minuman', name:'Flat White', desc:'Espresso dengan susu panas dan sedikit busa, menghasilkan rasa yang kaya dan velvety.', price:23000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-      {id:6, category:'minuman', name:'Mocha', desc:'Perpaduan espresso, susu panas, dan cokelat, memberikan sensasi manis dan kaya.', price:25000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-      {id:7, category:'minuman', name:'Chocolate Frappe', desc:'Es krim cokelat, espresso, dan es, blend jadi minuman manis, dingin, dan segar.', price:28000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-      {id:8, category:'minuman', name:'Vanilla Latte', desc:'Espresso, susu panas, dan sirup vanilla, lembut dengan sentuhan manis.', price:26000, img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80'},
-      
-      // Makanan
-      {id:9, category:'makanan', name:'Croissant', desc:'Croissant renyah dengan mentega premium, bisa dipilih plain atau isi cokelat', price:25000, img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80'},
-      {id:10, category:'makanan', name:'Sandwich', desc:'Roti gandum dengan ayam panggang, sayuran segar, dan saus spesial', price:30000, img:'https://images.unsplash.com/photo-1485451456034-3f9391c6f769?auto=format&fit=crop&w=400&q=80'},
-      {id:11, category:'makanan', name:'Bagel', desc:'Bagel fresh dengan cream cheese dan topping pilihan Anda', price:28000, img:'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=400&q=80'},
-      {id:12, category:'makanan', name:'Salad Buah', desc:'Campuran buah segar dengan yogurt dan granola', price:32000, img:'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80'},
-      
-      // Paket
-      {id:13, category:'paket', name:'Paket Pagi', desc:'1 minuman pilihan + 1 croissant', price:40000, img:'https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&w=400&q=80'},
-      {id:14, category:'paket', name:'Paket Siang', desc:'1 minuman + 1 sandwich/salad', price:45000, img:'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=400&q=80'},
-      {id:15, category:'paket', name:'Paket Keluarga', desc:'3 minuman + 3 makanan (pilihan)', price:120000, img:'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=400&q=80'}
-    ];
-
-    // DOM Elements
-    const categoryPage = document.getElementById('category-page');
-    const contentWrapper = document.getElementById('content-wrapper');
-    const menuPage = document.getElementById('menu-page');
-    const menuContainer = document.getElementById('menu-container');
-    const btnBack = document.getElementById('btn-back');
-    const categoryCards = document.querySelectorAll('.category-card');
-    const btnCart = document.getElementById('btn-cart');
-    const cartBadge = document.getElementById('cart-badge');
-    const sidePanel = document.getElementById('side-panel');
-    const closePanelBtn = document.getElementById('close-panel-btn');
-    const cartList = document.querySelector('.cart-list');
-    const cartTotal = document.getElementById('cart-total');
-    const btnCheckout = document.getElementById('btn-checkout');
-    const receiptModal = document.getElementById('receipt-modal');
-    const btnCloseReceipt = document.getElementById('btn-close-receipt');
-    const paymentMethods = document.querySelectorAll('input[name="payment-method"]');
-    const ewalletOptions = document.getElementById('ewallet-options');
-    const historyList = document.getElementById('history-list');
-    const btnClearHistory = document.getElementById('btn-clear-history');
-
-    // State
-    let cart = [];
-    let orderHistory = JSON.parse(localStorage.getItem('orderHistory')) || [];
-
-    // Initialize
-    renderOrderHistory();
-
-    // Event Listeners
-    categoryCards.forEach(card => {
-      card.addEventListener('click', () => loadMenu(card.dataset.category));
-      card.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') loadMenu(card.dataset.category);
-      });
-    });
-
-    btnBack.addEventListener('click', () => {
-      contentWrapper.style.display = 'none';
-      categoryPage.style.display = 'flex';
-      btnBack.style.display = 'none';
-    });
-
-    btnCart.addEventListener('click', () => {
-      sidePanel.classList.add('open');
-      sidePanel.setAttribute('aria-hidden', 'false');
-    });
-
-    closePanelBtn.addEventListener('click', () => {
-      sidePanel.classList.remove('open');
-      sidePanel.setAttribute('aria-hidden', 'true');
-    });
-
-    btnCheckout.addEventListener('click', checkout);
-    btnCloseReceipt.addEventListener('click', () => {
-      receiptModal.classList.remove('open');
-    });
-
-    paymentMethods.forEach(method => {
-      method.addEventListener('change', (e) => {
-        if (e.target.value === 'EWallet') {
-          ewalletOptions.style.display = 'block';
-        } else {
-          ewalletOptions.style.display = 'none';
-        }
-      });
-    });
-
-    btnClearHistory.addEventListener('click', () => {
-      orderHistory = [];
-      localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
-      renderOrderHistory();
-    });
-
-    // Functions
-    function loadMenu(category) {
-      const filteredItems = menuItems.filter(item => item.category === category);
-      
-      menuContainer.innerHTML = '';
-      filteredItems.forEach(item => {
-        const menuItem = document.createElement('div');
-        menuItem.className = 'menu-item';
-        menuItem.innerHTML = `
-          <img class="menu-image" src="${item.img}" alt="${item.name}" />
-          <div class="menu-content">
-            <h3 class="menu-title">${item.name}</h3>
-            <p class="menu-desc">${item.desc}</p>
-            <div class="menu-price">Rp ${item.price.toLocaleString('id-ID')}</div>
-            <button class="btn-add-cart" data-id="${item.id}" aria-label="Tambahkan ${item.name} ke keranjang">
-              <span class="icon"></span>
-            </button>
-          </div>
-        `;
-        menuContainer.appendChild(menuItem);
-      });
-
-      // Add event listeners to add-to-cart buttons
-      document.querySelectorAll('.btn-add-cart').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const itemId = parseInt(btn.dataset.id);
-          addToCart(itemId);
-        });
-      });
-
-      categoryPage.style.display = 'none';
-      contentWrapper.style.display = 'flex';
-      menuPage.style.display = 'flex';
-      btnBack.style.display = 'block';
-    }
-
-    function addToCart(itemId) {
-      const item = menuItems.find(i => i.id === itemId);
-      const existingItem = cart.find(i => i.id === itemId);
-
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        cart.push({...item, quantity: 1});
-      }
-
-      updateCart();
-    }
-
-    function updateCart() {
-      cartList.innerHTML = '';
-      let total = 0;
-
-      cart.forEach(item => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <div class="item-info">
-            <span class="item-name">${item.name}</span>
-            <span class="item-qty">x${item.quantity}</span>
-            <span class="item-price">Rp ${(item.price * item.quantity).toLocaleString('id-ID')}</span>
-          </div>
-          <button class="btn-remove" data-id="${item.id}" aria-label="Hapus ${item.name} dari keranjang">×</button>
-        `;
-        cartList.appendChild(li);
-        total += item.price * item.quantity;
-      });
-
-      // Add event listeners to remove buttons
-      document.querySelectorAll('.btn-remove').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const itemId = parseInt(btn.dataset.id);
-          removeFromCart(itemId);
-        });
-      });
-
-      cartTotal.textContent = `Total: Rp ${total.toLocaleString('id-ID')}`;
-      
-      // Update cart badge
-      const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-      if (itemCount > 0) {
-        cartBadge.textContent = itemCount;
-        cartBadge.style.display = 'flex';
-      } else {
-        cartBadge.style.display = 'none';
-      }
-
-      // Enable/disable checkout button
-      btnCheckout.disabled = itemCount === 0;
-    }
-
-    function removeFromCart(itemId) {
-      cart = cart.filter(item => item.id !== itemId);
-      updateCart();
-    }
-
-    function checkout() {
-      if (cart.length === 0) return;
-
-      // Get payment method
-      const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
-      let paymentDetail = paymentMethod;
-      
-      if (paymentMethod === 'EWallet') {
-        const ewallet = document.querySelector('input[name="ewallet"]:checked').value;
-        paymentDetail = `${paymentMethod} (${ewallet})`;
-      }
-
-      // Create order
-      const orderNumber = 'ORD-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-      const orderDate = new Date().toLocaleString('id-ID');
-      const orderTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
-      const order = {
-        number: orderNumber,
-        date: orderDate,
-        items: [...cart],
-        total: orderTotal,
-        payment: paymentDetail
-      };
-
-      // Add to history
-      orderHistory.unshift(order);
-      localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
-      renderOrderHistory();
-
-      // Show receipt
-      showReceipt(order);
-
-      // Clear cart
-      cart = [];
-      updateCart();
-    }
-
-    function showReceipt(order) {
-      document.getElementById('order-number').textContent = order.number;
-      document.getElementById('order-date').textContent = order.date;
-      
-      const receiptItems = document.getElementById('receipt-items');
-      receiptItems.innerHTML = '';
-      
-      order.items.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = `${item.name} x${item.quantity} - Rp ${(item.price * item.quantity).toLocaleString('id-ID')}`;
-        receiptItems.appendChild(li);
-      });
-      
-      const totalLi = document.createElement('li');
-      totalLi.innerHTML = `<strong>Total: Rp ${order.total.toLocaleString('id-ID')}</strong>`;
-      totalLi.style.borderTop = '1px solid #bf360c';
-      totalLi.style.paddingTop = '0.5rem';
-      totalLi.style.marginTop = '0.5rem';
-      receiptItems.appendChild(totalLi);
-      
-      // Generate simple barcode
-      const canvas = document.getElementById('barcode');
-      const ctx = canvas.getContext('2d');
-      canvas.width = 200;
-      canvas.height = 50;
-      ctx.fillStyle = '#3e2723';
-      
-      // Simple barcode pattern based on order number
-      for (let i = 0; i < 20; i++) {
-        const height = 10 + Math.random() * 30;
-        ctx.fillRect(i * 10, 50 - height, 5, height);
-      }
-      
-      receiptModal.classList.add('open');
-    }
-
-    function renderOrderHistory() {
-      historyList.innerHTML = '';
-      
-      if (orderHistory.length === 0) {
-        const li = document.createElement('li');
-        li.textContent = 'Belum ada riwayat pesanan';
-        historyList.appendChild(li);
-        return;
-      }
-      
-      orderHistory.slice(0, 5).forEach(order => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <strong>${order.number}</strong><br>
-          ${order.items.length} item • Rp ${order.total.toLocaleString('id-ID')}<br>
-          <small>${order.date}</small>
-        `;
-        historyList.appendChild(li);
-      });
-    }
-  })();
-</script>
 </body>
 </html>
